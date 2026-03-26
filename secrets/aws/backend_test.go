@@ -29,21 +29,13 @@ import (
 	cleanhttp "github.com/hashicorp/go-cleanhttp"
 	"github.com/mitchellh/mapstructure"
 	logicaltest "github.com/openbao/openbao-plugins/internal/logical"
+	mock_aws "github.com/openbao/openbao-plugins/secrets/aws/internal/mock"
 	"github.com/openbao/openbao/helper/testhelpers"
 	"github.com/openbao/openbao/sdk/v2/logical"
+	"go.uber.org/mock/gomock"
 )
 
 var initSetup sync.Once
-
-type mockIAMClient struct {
-	IAMAPI
-}
-
-func (m *mockIAMClient) CreateUser(_ context.Context, params *iam.CreateUserInput, optFns ...func(*iam.Options)) (*iam.CreateUserOutput, error) {
-	return nil, &iamtypes.LimitExceededException{
-		ErrorCodeOverride: aws.String("LimitExceededException"),
-	}
-}
 
 func getBackend(t *testing.T) logical.Backend {
 	be, _ := Factory(context.Background(), logical.TestBackendConfig())
@@ -172,7 +164,13 @@ func TestBackend_throttled(t *testing.T) {
 
 	// Mock the IAM API call to return a throttled response to the CreateUser API
 	// call
-	b.iamClient = &mockIAMClient{}
+	mockClient := mock_aws.NewMockIAMAPI(gomock.NewController(t))
+	mockClient.EXPECT().
+		CreateUser(gomock.Any(), gomock.Any()).
+		Return(nil, &iamtypes.LimitExceededException{
+			ErrorCodeOverride: aws.String("LimitExceededException"),
+		})
+	b.iamClient = mockClient
 
 	credReq := &logical.Request{
 		Operation: logical.UpdateOperation,
