@@ -14,9 +14,17 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	"github.com/mitchellh/mapstructure"
+	"github.com/openbao/openbao-plugins/internal/logicaltest"
 	consul "github.com/openbao/openbao-plugins/secrets/consul/testhelpers"
 	"github.com/openbao/openbao/sdk/v2/logical"
 )
+
+func getBackend() logical.Backend {
+	config := logical.TestBackendConfig()
+	config.StorageView = &logical.InmemStorage{}
+	be, _ := Factory(context.Background(), config)
+	return be
+}
 
 func testOldestAndLatestSupported(t *testing.T, f func(t *testing.T, versionId string)) {
 	t.Run("latest-supported", func(t *testing.T) {
@@ -521,7 +529,7 @@ func testBackendBasic(t *testing.T, version string) {
 	}
 
 	logicaltest.Test(t, logicaltest.TestCase{
-		LogicalBackend: b,
+		Backend: b,
 		Steps: []logicaltest.TestStep{
 			testAccStepConfig(t, connData),
 			testAccStepWriteRole(t, "test", "test", ""),
@@ -531,9 +539,8 @@ func testBackendBasic(t *testing.T, version string) {
 }
 
 func TestBackend_crud(t *testing.T) {
-	b, _ := Factory(context.Background(), logical.TestBackendConfig())
 	logicaltest.Test(t, logicaltest.TestCase{
-		LogicalBackend: b,
+		Backend: getBackend(),
 		Steps: []logicaltest.TestStep{
 			testAccStepWriteRole(t, "test", "write", ""),
 			testAccStepWriteRole(t, "test2", "write", ""),
@@ -546,9 +553,8 @@ func TestBackend_crud(t *testing.T) {
 }
 
 func TestBackend_role_ttl(t *testing.T) {
-	b, _ := Factory(context.Background(), logical.TestBackendConfig())
 	logicaltest.Test(t, logicaltest.TestCase{
-		LogicalBackend: b,
+		Backend: getBackend(),
 		Steps: []logicaltest.TestStep{
 			testAccStepWriteRole(t, "test", "write", "6h"),
 			testAccStepReadRole(t, "test", "write", 6*time.Hour),
