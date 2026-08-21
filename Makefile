@@ -2,7 +2,7 @@ PLUGIN_PREFIX := openbao-plugin
 PLUGIN_TYPES := auth secrets database kms
 PLUGINS := $(subst /,-,$(wildcard $(foreach t,$(PLUGIN_TYPES),$(t)/*)))
 PLUGIN := $(firstword $(PLUGINS))
-REGISTRY := ghcr.io/openbao
+REGISTRY := ghcr.io/ki-reply-gmbh
 VERSION := $(shell (git describe --tags --match "$(PLUGIN)-*" 2>/dev/null || echo "v0.0.0") | cut -d- -f3-)
 
 TARGETS := \
